@@ -31,12 +31,18 @@ export interface ConfirmConfig {
   level: 'interactive' | 'minimal' | 'none';
 }
 
+export interface MrConfig {
+  enabled: boolean;
+  platform: 'auto' | 'github' | 'gitlab';
+}
+
 export interface AigitConfig {
   ai: AIConfig;
   git: GitConfig;
   commit: CommitConfig;
   filter: FilterConfig;
   confirm: ConfirmConfig;
+  mr: MrConfig;
   templates: string[];
 }
 
@@ -64,6 +70,10 @@ const DEFAULT_CONFIG: AigitConfig = {
   },
   confirm: {
     level: 'interactive',
+  },
+  mr: {
+    enabled: true,
+    platform: 'auto',
   },
   templates: [],
 };

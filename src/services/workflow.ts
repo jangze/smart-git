@@ -1,9 +1,11 @@
 import { consola } from 'consola';
 import chalk from 'chalk';
-import { loadConfig } from '../services/config.js';
+import { loadConfig, type AigitConfig } from '../services/config.js';
 import { AIService } from '../services/ai.js';
 import * as git from '../services/git.js';
 import { confirm, confirmOrEdit } from '../utils/interactive.js';
+import { getRemoteInfo, getCurrentBranch } from '../utils/platform.js';
+import { generateMrLink } from '../utils/mrLink.js';
 
 export interface WorkflowOptions {
   yes?: boolean;
@@ -168,7 +170,7 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
   // Allow editing unless --no-edit or dry-run
   // Default is Y (use generated), N leads to editor
   if (!options.noEdit && !options.dryRun) {
-    const result = await confirmOrEdit('Use this commit message? (Y/n)');
+    const result = await confirmOrEdit('Use this commit message?');
     if (!result.useGenerated && result.editedMessage) {
       commitMessage = result.editedMessage;
     }
@@ -200,5 +202,88 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
 
     await git.push(shouldSetUpstream);
     consola.success(chalk.green('Changes pushed to remote'));
+
+    // Generate and display MR/PR link
+    await displayMrLink(config);
   }
+}
+
+/**
+ * Display MR/PR link after successful push
+ */
+async function displayMrLink(config: AigitConfig): Promise<void> {
+  // Check if MR feature is enabled
+  if (!config.mr.enabled) {
+    return;
+  }
+
+  // Get remote info
+  const remote = await getRemoteInfo();
+  if (!remote) {
+    return;
+  }
+
+  // Check platform preference
+  if (config.mr.platform !== 'auto' && config.mr.platform !== remote.platform) {
+    return;
+  }
+
+  // Get current branch
+  const currentBranch = await getCurrentBranch();
+  if (!currentBranch) {
+    return;
+  }
+
+  // Generate MR link
+  const targetBranch = config.git.defaultBranch;
+  const mrResult = generateMrLink(remote, targetBranch, currentBranch);
+
+  if (!mrResult) {
+    return;
+  }
+
+  // Display the link
+  const boxWidth = Math.max(50, mrResult.displayUrl.length + 4);
+  const horizontalLine = '─'.repeat(boxWidth);
+
+  consola.log('');
+  consola.log(chalk.green(`┌${horizontalLine}┐`));
+  consola.log(chalk.green(`│`) + chalk.white('  Create Merge Request'.padEnd(boxWidth - 1) + '│'));
+  consola.log(chalk.green(`│`) + chalk.white(''.padEnd(boxWidth - 1) + '│'));
+
+  // Wrap long URLs
+  const urlLines = wrapUrl(mrResult.displayUrl, boxWidth - 4);
+  for (const line of urlLines) {
+    consola.log(chalk.green(`│`) + chalk.cyan('  ' + line.padEnd(boxWidth - 3) + '│'));
+  }
+
+  consola.log(chalk.green(`│`) + chalk.white(''.padEnd(boxWidth - 1) + '│'));
+  consola.log(chalk.green(`└${horizontalLine}┘`));
+  consola.log('');
+}
+
+/**
+ * Wrap long URL into multiple lines
+ */
+function wrapUrl(url: string, maxWidth: number): string[] {
+  if (url.length <= maxWidth) {
+    return [url];
+  }
+
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const char of url) {
+    if (currentLine.length >= maxWidth) {
+      lines.push(currentLine);
+      currentLine = '';
+    }
+    currentLine += char;
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
 }

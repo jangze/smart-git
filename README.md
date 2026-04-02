@@ -69,6 +69,10 @@ Configuration file location: `~/.aigit/config.json`
   },
   "confirm": {
     "level": "interactive"
+  },
+  "mr": {
+    "enabled": true,           // Enable MR link generation after push
+    "platform": "auto"         // "auto" | "github" | "gitlab"
   }
 }
 ```
@@ -82,6 +86,8 @@ Configuration file location: `~/.aigit/config.json`
 | `ai.model` | Model name (default: gpt-4o-mini) |
 | `git.defaultBranch` | Your default branch name (default: main) |
 | `commit.language` | Commit message language: `zh` (Chinese) or `en` (English) |
+| `mr.enabled` | Enable MR/PR link generation after push (default: true) |
+| `mr.platform` | Git platform: `auto`, `github`, or `gitlab` |
 
 ## Commit Message Format
 
@@ -122,6 +128,54 @@ feat: add user authentication module
 - 1. Add login page with form validation
 - 2. Add JWT token generation logic
 - 3. Integrate OAuth2 third-party login
+```
+
+## Merge Request Link
+
+After a successful `aigit push`, the tool will automatically generate and display a Merge Request (or Pull Request) link.
+
+### Supported Platforms
+
+- **GitHub** - Creates PR link with `?expand=1` to auto-expand description
+- **GitLab** - Creates MR link with pre-filled source and target branches
+
+### Example Output
+
+```bash
+$ aigit push
+
+✓ Commit created
+✓ Changes pushed to remote
+
+┌──────────────────────────────────────────────┐
+│  Create Merge Request                        │
+│                                              │
+│  https://github.com/jangze/smart-git/        │
+│  compare/main...feature-auth?expand=1        │
+└──────────────────────────────────────────────┘
+```
+
+### Configuration
+
+To disable MR link generation:
+
+```json
+{
+  "mr": {
+    "enabled": false
+  }
+}
+```
+
+To specify a platform manually:
+
+```json
+{
+  "mr": {
+    "enabled": true,
+    "platform": "github"
+  }
+}
 ```
 
 ## Workflow

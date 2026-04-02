@@ -20,6 +20,8 @@ export function configCommand(program: Command) {
         model: string;
         defaultBranch: string;
         language: 'zh' | 'en';
+        mrEnabled: boolean;
+        mrPlatform: 'auto' | 'github' | 'gitlab';
       }>([
         {
           type: 'input',
@@ -55,6 +57,24 @@ export function configCommand(program: Command) {
           ],
           default: currentConfig.commit.language || 'zh',
         },
+        {
+          type: 'confirm',
+          name: 'mrEnabled',
+          message: 'Enable Merge Request link generation after push?',
+          default: currentConfig.mr.enabled,
+        },
+        {
+          type: 'list',
+          name: 'mrPlatform',
+          message: 'Git platform:',
+          choices: [
+            { name: 'Auto-detect', value: 'auto' },
+            { name: 'GitHub', value: 'github' },
+            { name: 'GitLab', value: 'gitlab' },
+          ],
+          default: currentConfig.mr.platform,
+          when: (ans: { mrEnabled: boolean }) => ans.mrEnabled,
+        },
       ]);
 
       saveConfig({
@@ -69,6 +89,10 @@ export function configCommand(program: Command) {
         },
         commit: {
           language: answers.language,
+        },
+        mr: {
+          enabled: answers.mrEnabled,
+          platform: answers.mrPlatform || 'auto',
         },
       });
 
