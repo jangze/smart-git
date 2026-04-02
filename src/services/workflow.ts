@@ -209,6 +209,119 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
 }
 
 /**
+ * Push-only workflow with gate checks (no commit)
+ * Step 1: Check remote branch status
+ * Step 2: Check default branch sync status
+ * Step 3: Check if current branch includes latest default branch
+ * Step 4: Push to remote
+ * Step 5: Display MR/PR link
+ */
+export async function execPush(options: WorkflowOptions): Promise<void> {
+  const config = loadConfig();
+  const currentBranch = await git.getCurrentBranch();
+
+  // Step 1: Check remote branch
+  consola.info(chalk.blue(`Step 1: Checking remote branch "${currentBranch}"`));
+
+  await git.fetchRemote();
+
+  const remoteBranchInfo = await git.checkRemoteBranch(currentBranch);
+
+  if (remoteBranchInfo.exists && remoteBranchInfo.behind > 0) {
+    consola.warn(
+      chalk.yellow(`Remote branch has ${remoteBranchInfo.behind} new commit(s), local is behind`)
+    );
+
+    if (!options.yes) {
+      const shouldPull = await confirm(
+        chalk.yellow(`Download remote updates to local branch? (y/n)`)
+      );
+      if (shouldPull) {
+        await git.pullRemote(currentBranch);
+        consola.success(chalk.green('Remote updates merged locally'));
+      }
+    } else {
+      await git.pullRemote(currentBranch);
+      consola.success(chalk.green('Remote updates merged locally'));
+    }
+  } else if (remoteBranchInfo.exists) {
+    consola.success(chalk.green('Current branch is up to date with remote'));
+  } else {
+    consola.info(chalk.gray('Remote branch does not exist yet'));
+  }
+
+  // Step 2: Check default branch sync status
+  const defaultBranch = config.git.defaultBranch;
+  consola.info(chalk.blue(`Step 2: Checking ${defaultBranch} sync status`));
+
+  const masterSync = await git.checkMasterSync(defaultBranch);
+
+  if (masterSync.remoteExists && masterSync.localBehind > 0) {
+    consola.warn(
+      chalk.yellow(`Local ${defaultBranch} is behind remote by ${masterSync.localBehind} commit(s)`)
+    );
+
+    if (!options.yes) {
+      const shouldPull = await confirm(
+        chalk.yellow(`Pull remote ${defaultBranch}? (y/n)`)
+      );
+      if (shouldPull) {
+        await git.pullRemote(defaultBranch);
+        consola.success(chalk.green(`${defaultBranch} updated`));
+      }
+    } else {
+      await git.pullRemote(defaultBranch);
+      consola.success(chalk.green(`${defaultBranch} updated`));
+    }
+  } else {
+    consola.success(chalk.green(`${defaultBranch} is up to date`));
+  }
+
+  // Step 3: Check if current branch includes latest default branch
+  consola.info(chalk.blue(`Step 3: Checking if current branch includes latest ${defaultBranch}`));
+
+  const branchIncludesMaster = await git.checkBranchIncludesMaster(currentBranch, defaultBranch);
+
+  if (branchIncludesMaster.needsMerge) {
+    consola.warn(
+      chalk.yellow(
+        `Current branch is ${branchIncludesMaster.commitsBehind} commit(s) behind ${defaultBranch}`
+      )
+    );
+
+    if (!options.yes) {
+      const shouldMerge = await confirm(
+        chalk.yellow(`Merge ${defaultBranch} into current branch? (y/n)`)
+      );
+      if (shouldMerge) {
+        await git.mergeBranch(defaultBranch);
+        consola.success(chalk.green(`Merged ${defaultBranch} into current branch`));
+      }
+    } else {
+      await git.mergeBranch(defaultBranch);
+      consola.success(chalk.green(`Merged ${defaultBranch} into current branch`));
+    }
+  } else {
+    consola.success(chalk.green('Current branch includes latest master'));
+  }
+
+  // Step 4: Push to remote
+  consola.info(chalk.blue('Step 4: Pushing to remote'));
+
+  if (options.dryRun) {
+    consola.info(chalk.cyan('[Dry Run] Would push to remote'));
+    return;
+  }
+
+  const shouldSetUpstream = !remoteBranchInfo.exists;
+  await git.push(shouldSetUpstream);
+  consola.success(chalk.green('Changes pushed to remote'));
+
+  // Step 5: Display MR/PR link
+  await displayMrLink(config);
+}
+
+/**
  * Display MR/PR link after successful push
  */
 async function displayMrLink(config: AigitConfig): Promise<void> {
