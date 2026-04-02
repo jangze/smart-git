@@ -55,11 +55,125 @@ Configuration file location: `~/.aigit/config.json`
     "model": "gpt-4o-mini"
   },
   "git": {
-    "defaultBranch": "main",
-    "commitStyle": "conventional"
+    "defaultBranch": "main"
+  },
+  "commit": {
+    "language": "zh"  // "zh" for Chinese, "en" for English
+  },
+  "filter": {
+    "ignoreWhitespace": true,
+    "ignoreComments": true,
+    "ignoreBuildArtifacts": true,
+    "mergeCancelingOps": true,
+    "maxListItems": 7
   },
   "confirm": {
     "level": "interactive"
+  },
+  "mr": {
+    "enabled": true,           // Enable MR link generation after push
+    "platform": "auto"         // "auto" | "github" | "gitlab"
+  }
+}
+```
+
+### Config Options
+
+| Field | Description |
+|-------|-------------|
+| `ai.apiKey` | Your OpenAI API key (or compatible API) |
+| `ai.baseURL` | API base URL (default: OpenAI) |
+| `ai.model` | Model name (default: gpt-4o-mini) |
+| `git.defaultBranch` | Your default branch name (default: main) |
+| `commit.language` | Commit message language: `zh` (Chinese) or `en` (English) |
+| `mr.enabled` | Enable MR/PR link generation after push (default: true) |
+| `mr.platform` | Git platform: `auto`, `github`, or `gitlab` |
+
+## Commit Message Format
+
+```
+<type>: <description>
+
+- 1. <change item 1>
+- 2. <change item 2>
+- 3. <change item 3>
+```
+
+### Types
+
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation changes
+- `style` - Code style changes (formatting)
+- `refactor` - Code refactoring
+- `perf` - Performance improvements
+- `test` - Test changes
+- `chore` - Build/config changes
+
+### Example (Chinese)
+
+```
+feat: 添加用户认证模块
+
+- 1. 新增登录页面和表单验证
+- 2. 添加 JWT token 生成逻辑
+- 3. 集成 OAuth2 第三方登录
+```
+
+### Example (English)
+
+```
+feat: add user authentication module
+
+- 1. Add login page with form validation
+- 2. Add JWT token generation logic
+- 3. Integrate OAuth2 third-party login
+```
+
+## Merge Request Link
+
+After a successful `aigit push`, the tool will automatically generate and display a Merge Request (or Pull Request) link.
+
+### Supported Platforms
+
+- **GitHub** - Creates PR link with `?expand=1` to auto-expand description
+- **GitLab** - Creates MR link with pre-filled source and target branches
+
+### Example Output
+
+```bash
+$ aigit push
+
+✓ Commit created
+✓ Changes pushed to remote
+
+┌──────────────────────────────────────────────┐
+│  Create Merge Request                        │
+│                                              │
+│  https://github.com/jangze/smart-git/        │
+│  compare/main...feature-auth?expand=1        │
+└──────────────────────────────────────────────┘
+```
+
+### Configuration
+
+To disable MR link generation:
+
+```json
+{
+  "mr": {
+    "enabled": false
+  }
+}
+```
+
+To specify a platform manually:
+
+```json
+{
+  "mr": {
+    "enabled": true,
+    "platform": "github"
   }
 }
 ```

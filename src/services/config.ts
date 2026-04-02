@@ -13,17 +13,36 @@ export interface AIConfig {
 
 export interface GitConfig {
   defaultBranch: string;
-  commitStyle: 'conventional' | 'plain';
+}
+
+export interface CommitConfig {
+  language: 'zh' | 'en';
+}
+
+export interface FilterConfig {
+  ignoreWhitespace: boolean;
+  ignoreComments: boolean;
+  ignoreBuildArtifacts: boolean;
+  mergeCancelingOps: boolean;
+  maxListItems: number;
 }
 
 export interface ConfirmConfig {
   level: 'interactive' | 'minimal' | 'none';
 }
 
+export interface MrConfig {
+  enabled: boolean;
+  platform: 'auto' | 'github' | 'gitlab';
+}
+
 export interface AigitConfig {
   ai: AIConfig;
   git: GitConfig;
+  commit: CommitConfig;
+  filter: FilterConfig;
   confirm: ConfirmConfig;
+  mr: MrConfig;
   templates: string[];
 }
 
@@ -38,10 +57,23 @@ const DEFAULT_CONFIG: AigitConfig = {
   },
   git: {
     defaultBranch: 'main',
-    commitStyle: 'conventional',
+  },
+  commit: {
+    language: 'zh',
+  },
+  filter: {
+    ignoreWhitespace: true,
+    ignoreComments: true,
+    ignoreBuildArtifacts: true,
+    mergeCancelingOps: true,
+    maxListItems: 7,
   },
   confirm: {
     level: 'interactive',
+  },
+  mr: {
+    enabled: true,
+    platform: 'auto',
   },
   templates: [],
 };

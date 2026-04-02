@@ -1,9 +1,11 @@
 import { consola } from 'consola';
 import chalk from 'chalk';
-import { loadConfig } from '../services/config.js';
+import { loadConfig, type AigitConfig } from '../services/config.js';
 import { AIService } from '../services/ai.js';
 import * as git from '../services/git.js';
-import { confirm, editor } from '../utils/interactive.js';
+import { confirm, confirmOrEdit } from '../utils/interactive.js';
+import { getRemoteInfo, getCurrentBranch } from '../utils/platform.js';
+import { generateMrLink } from '../utils/mrLink.js';
 
 export interface WorkflowOptions {
   yes?: boolean;
@@ -153,8 +155,12 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
       return;
     }
 
-    const aiService = new AIService(config.ai);
-    commitMessage = await aiService.generateCommitMessage(diff, config.git.commitStyle);
+    const aiService = new AIService(config);
+    commitMessage = await aiService.generateCommitMessage({
+      diff,
+      language: config.commit.language,
+      filter: config.filter,
+    });
   }
 
   // Show generated message
@@ -162,13 +168,11 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
   consola.log(chalk.cyan(commitMessage));
 
   // Allow editing unless --no-edit or dry-run
+  // Default is Y (use generated), N leads to editor
   if (!options.noEdit && !options.dryRun) {
-    const shouldEdit = await confirm('Edit commit message? (y/n)');
-    if (shouldEdit) {
-      commitMessage = await editor({
-        message: 'Edit commit message:',
-        default: commitMessage,
-      });
+    const result = await confirmOrEdit('Use this commit message?');
+    if (!result.useGenerated && result.editedMessage) {
+      commitMessage = result.editedMessage;
     }
   }
 
@@ -198,5 +202,201 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
 
     await git.push(shouldSetUpstream);
     consola.success(chalk.green('Changes pushed to remote'));
+
+    // Generate and display MR/PR link
+    await displayMrLink(config);
   }
+}
+
+/**
+ * Push-only workflow with gate checks (no commit)
+ * Step 1: Check remote branch status
+ * Step 2: Check default branch sync status
+ * Step 3: Check if current branch includes latest default branch
+ * Step 4: Push to remote
+ * Step 5: Display MR/PR link
+ */
+export async function execPush(options: WorkflowOptions): Promise<void> {
+  const config = loadConfig();
+  const currentBranch = await git.getCurrentBranch();
+
+  // Step 1: Check remote branch
+  consola.info(chalk.blue(`Step 1: Checking remote branch "${currentBranch}"`));
+
+  await git.fetchRemote();
+
+  const remoteBranchInfo = await git.checkRemoteBranch(currentBranch);
+
+  if (remoteBranchInfo.exists && remoteBranchInfo.behind > 0) {
+    consola.warn(
+      chalk.yellow(`Remote branch has ${remoteBranchInfo.behind} new commit(s), local is behind`)
+    );
+
+    if (!options.yes) {
+      const shouldPull = await confirm(
+        chalk.yellow(`Download remote updates to local branch? (y/n)`)
+      );
+      if (shouldPull) {
+        await git.pullRemote(currentBranch);
+        consola.success(chalk.green('Remote updates merged locally'));
+      }
+    } else {
+      await git.pullRemote(currentBranch);
+      consola.success(chalk.green('Remote updates merged locally'));
+    }
+  } else if (remoteBranchInfo.exists) {
+    consola.success(chalk.green('Current branch is up to date with remote'));
+  } else {
+    consola.info(chalk.gray('Remote branch does not exist yet'));
+  }
+
+  // Step 2: Check default branch sync status
+  const defaultBranch = config.git.defaultBranch;
+  consola.info(chalk.blue(`Step 2: Checking ${defaultBranch} sync status`));
+
+  const masterSync = await git.checkMasterSync(defaultBranch);
+
+  if (masterSync.remoteExists && masterSync.localBehind > 0) {
+    consola.warn(
+      chalk.yellow(`Local ${defaultBranch} is behind remote by ${masterSync.localBehind} commit(s)`)
+    );
+
+    if (!options.yes) {
+      const shouldPull = await confirm(
+        chalk.yellow(`Pull remote ${defaultBranch}? (y/n)`)
+      );
+      if (shouldPull) {
+        await git.pullRemote(defaultBranch);
+        consola.success(chalk.green(`${defaultBranch} updated`));
+      }
+    } else {
+      await git.pullRemote(defaultBranch);
+      consola.success(chalk.green(`${defaultBranch} updated`));
+    }
+  } else {
+    consola.success(chalk.green(`${defaultBranch} is up to date`));
+  }
+
+  // Step 3: Check if current branch includes latest default branch
+  consola.info(chalk.blue(`Step 3: Checking if current branch includes latest ${defaultBranch}`));
+
+  const branchIncludesMaster = await git.checkBranchIncludesMaster(currentBranch, defaultBranch);
+
+  if (branchIncludesMaster.needsMerge) {
+    consola.warn(
+      chalk.yellow(
+        `Current branch is ${branchIncludesMaster.commitsBehind} commit(s) behind ${defaultBranch}`
+      )
+    );
+
+    if (!options.yes) {
+      const shouldMerge = await confirm(
+        chalk.yellow(`Merge ${defaultBranch} into current branch? (y/n)`)
+      );
+      if (shouldMerge) {
+        await git.mergeBranch(defaultBranch);
+        consola.success(chalk.green(`Merged ${defaultBranch} into current branch`));
+      }
+    } else {
+      await git.mergeBranch(defaultBranch);
+      consola.success(chalk.green(`Merged ${defaultBranch} into current branch`));
+    }
+  } else {
+    consola.success(chalk.green('Current branch includes latest master'));
+  }
+
+  // Step 4: Push to remote
+  consola.info(chalk.blue('Step 4: Pushing to remote'));
+
+  if (options.dryRun) {
+    consola.info(chalk.cyan('[Dry Run] Would push to remote'));
+    return;
+  }
+
+  const shouldSetUpstream = !remoteBranchInfo.exists;
+  await git.push(shouldSetUpstream);
+  consola.success(chalk.green('Changes pushed to remote'));
+
+  // Step 5: Display MR/PR link
+  await displayMrLink(config);
+}
+
+/**
+ * Display MR/PR link after successful push
+ */
+async function displayMrLink(config: AigitConfig): Promise<void> {
+  // Check if MR feature is enabled
+  if (!config.mr.enabled) {
+    return;
+  }
+
+  // Get remote info
+  const remote = await getRemoteInfo();
+  if (!remote) {
+    return;
+  }
+
+  // Check platform preference
+  if (config.mr.platform !== 'auto' && config.mr.platform !== remote.platform) {
+    return;
+  }
+
+  // Get current branch
+  const currentBranch = await getCurrentBranch();
+  if (!currentBranch) {
+    return;
+  }
+
+  // Generate MR link
+  const targetBranch = config.git.defaultBranch;
+  const mrResult = generateMrLink(remote, targetBranch, currentBranch);
+
+  if (!mrResult) {
+    return;
+  }
+
+  // Display the link
+  const boxWidth = Math.max(50, mrResult.displayUrl.length + 4);
+  const horizontalLine = '─'.repeat(boxWidth);
+
+  consola.log('');
+  consola.log(chalk.green(`┌${horizontalLine}┐`));
+  consola.log(chalk.green(`│`) + chalk.white('  Create Merge Request'.padEnd(boxWidth - 1) + '│'));
+  consola.log(chalk.green(`│`) + chalk.white(''.padEnd(boxWidth - 1) + '│'));
+
+  // Wrap long URLs
+  const urlLines = wrapUrl(mrResult.displayUrl, boxWidth - 4);
+  for (const line of urlLines) {
+    consola.log(chalk.green(`│`) + chalk.cyan('  ' + line.padEnd(boxWidth - 3) + '│'));
+  }
+
+  consola.log(chalk.green(`│`) + chalk.white(''.padEnd(boxWidth - 1) + '│'));
+  consola.log(chalk.green(`└${horizontalLine}┘`));
+  consola.log('');
+}
+
+/**
+ * Wrap long URL into multiple lines
+ */
+function wrapUrl(url: string, maxWidth: number): string[] {
+  if (url.length <= maxWidth) {
+    return [url];
+  }
+
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const char of url) {
+    if (currentLine.length >= maxWidth) {
+      lines.push(currentLine);
+      currentLine = '';
+    }
+    currentLine += char;
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
 }

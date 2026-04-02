@@ -19,7 +19,9 @@ export function configCommand(program: Command) {
         baseURL: string;
         model: string;
         defaultBranch: string;
-        commitStyle: 'conventional' | 'plain';
+        language: 'zh' | 'en';
+        mrEnabled: boolean;
+        mrPlatform: 'auto' | 'github' | 'gitlab';
       }>([
         {
           type: 'input',
@@ -47,13 +49,31 @@ export function configCommand(program: Command) {
         },
         {
           type: 'list',
-          name: 'commitStyle',
-          message: 'Commit message style:',
+          name: 'language',
+          message: 'Commit message language:',
           choices: [
-            { name: 'Conventional Commits', value: 'conventional' },
-            { name: 'Plain', value: 'plain' },
+            { name: '中文', value: 'zh' },
+            { name: 'English', value: 'en' },
           ],
-          default: currentConfig.git.commitStyle || 'conventional',
+          default: currentConfig.commit.language || 'zh',
+        },
+        {
+          type: 'confirm',
+          name: 'mrEnabled',
+          message: 'Enable Merge Request link generation after push?',
+          default: currentConfig.mr.enabled,
+        },
+        {
+          type: 'list',
+          name: 'mrPlatform',
+          message: 'Git platform:',
+          choices: [
+            { name: 'Auto-detect', value: 'auto' },
+            { name: 'GitHub', value: 'github' },
+            { name: 'GitLab', value: 'gitlab' },
+          ],
+          default: currentConfig.mr.platform,
+          when: (ans: { mrEnabled: boolean }) => ans.mrEnabled,
         },
       ]);
 
@@ -66,7 +86,13 @@ export function configCommand(program: Command) {
         },
         git: {
           defaultBranch: answers.defaultBranch,
-          commitStyle: answers.commitStyle as 'conventional' | 'plain',
+        },
+        commit: {
+          language: answers.language,
+        },
+        mr: {
+          enabled: answers.mrEnabled,
+          platform: answers.mrPlatform || 'auto',
         },
       });
 
