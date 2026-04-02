@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { loadConfig } from '../services/config.js';
 import { AIService } from '../services/ai.js';
 import * as git from '../services/git.js';
-import { confirm, editor } from '../utils/interactive.js';
+import { confirm, confirmOrEdit } from '../utils/interactive.js';
 
 export interface WorkflowOptions {
   yes?: boolean;
@@ -166,13 +166,11 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
   consola.log(chalk.cyan(commitMessage));
 
   // Allow editing unless --no-edit or dry-run
+  // Default is Y (use generated), N leads to editor
   if (!options.noEdit && !options.dryRun) {
-    const shouldEdit = await confirm('Edit commit message? (y/n)');
-    if (shouldEdit) {
-      commitMessage = await editor({
-        message: 'Edit commit message:',
-        default: commitMessage,
-      });
+    const result = await confirmOrEdit('Use this commit message? (Y/n)');
+    if (!result.useGenerated && result.editedMessage) {
+      commitMessage = result.editedMessage;
     }
   }
 
