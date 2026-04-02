@@ -19,7 +19,7 @@ export function configCommand(program: Command) {
         baseURL: string;
         model: string;
         defaultBranch: string;
-        commitStyle: 'conventional' | 'plain';
+        language: 'zh' | 'en';
       }>([
         {
           type: 'input',
@@ -47,13 +47,13 @@ export function configCommand(program: Command) {
         },
         {
           type: 'list',
-          name: 'commitStyle',
-          message: 'Commit message style:',
+          name: 'language',
+          message: 'Commit message language:',
           choices: [
-            { name: 'Conventional Commits', value: 'conventional' },
-            { name: 'Plain', value: 'plain' },
+            { name: '中文', value: 'zh' },
+            { name: 'English', value: 'en' },
           ],
-          default: currentConfig.git.commitStyle || 'conventional',
+          default: currentConfig.commit.language || 'zh',
         },
       ]);
 
@@ -66,7 +66,9 @@ export function configCommand(program: Command) {
         },
         git: {
           defaultBranch: answers.defaultBranch,
-          commitStyle: answers.commitStyle as 'conventional' | 'plain',
+        },
+        commit: {
+          language: answers.language,
         },
       });
 

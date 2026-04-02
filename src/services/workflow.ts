@@ -153,8 +153,12 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
       return;
     }
 
-    const aiService = new AIService(config.ai);
-    commitMessage = await aiService.generateCommitMessage(diff, config.git.commitStyle);
+    const aiService = new AIService(config);
+    commitMessage = await aiService.generateCommitMessage({
+      diff,
+      language: config.commit.language,
+      filter: config.filter,
+    });
   }
 
   // Show generated message

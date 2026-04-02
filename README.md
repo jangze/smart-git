@@ -55,13 +55,73 @@ Configuration file location: `~/.aigit/config.json`
     "model": "gpt-4o-mini"
   },
   "git": {
-    "defaultBranch": "main",
-    "commitStyle": "conventional"
+    "defaultBranch": "main"
+  },
+  "commit": {
+    "language": "zh"  // "zh" for Chinese, "en" for English
+  },
+  "filter": {
+    "ignoreWhitespace": true,
+    "ignoreComments": true,
+    "ignoreBuildArtifacts": true,
+    "mergeCancelingOps": true,
+    "maxListItems": 7
   },
   "confirm": {
     "level": "interactive"
   }
 }
+```
+
+### Config Options
+
+| Field | Description |
+|-------|-------------|
+| `ai.apiKey` | Your OpenAI API key (or compatible API) |
+| `ai.baseURL` | API base URL (default: OpenAI) |
+| `ai.model` | Model name (default: gpt-4o-mini) |
+| `git.defaultBranch` | Your default branch name (default: main) |
+| `commit.language` | Commit message language: `zh` (Chinese) or `en` (English) |
+
+## Commit Message Format
+
+```
+<type>: <description>
+
+- 1. <change item 1>
+- 2. <change item 2>
+- 3. <change item 3>
+```
+
+### Types
+
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation changes
+- `style` - Code style changes (formatting)
+- `refactor` - Code refactoring
+- `perf` - Performance improvements
+- `test` - Test changes
+- `chore` - Build/config changes
+
+### Example (Chinese)
+
+```
+feat: 添加用户认证模块
+
+- 1. 新增登录页面和表单验证
+- 2. 添加 JWT token 生成逻辑
+- 3. 集成 OAuth2 第三方登录
+```
+
+### Example (English)
+
+```
+feat: add user authentication module
+
+- 1. Add login page with form validation
+- 2. Add JWT token generation logic
+- 3. Integrate OAuth2 third-party login
 ```
 
 ## Workflow
