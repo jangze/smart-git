@@ -203,9 +203,10 @@ export async function commit(message: string): Promise<void> {
 /**
  * Push to remote
  */
-export async function push(upstream?: boolean): Promise<void> {
+export async function push(upstream?: boolean, branch?: string): Promise<void> {
   if (upstream) {
-    await execGit(['push', '-u', 'origin']);
+    const currentBranch = branch || await getCurrentBranch();
+    await execGit(['push', '-u', 'origin', currentBranch || 'HEAD']);
   } else {
     await execGit(['push']);
   }
