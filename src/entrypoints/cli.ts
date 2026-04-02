@@ -11,7 +11,15 @@ import { configCommand } from '../commands/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const pkg = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
+const pkgPath = join(__dirname, '../../package.json');
+let pkg: { version: string; name: string; description: string };
+
+try {
+  pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+} catch {
+  // Fallback for packaged version
+  pkg = { version: '0.1.0', name: 'aigit', description: 'AI-powered Git assistant' };
+}
 
 const program = new Command();
 
