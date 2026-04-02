@@ -1,0 +1,58 @@
+{
+  "name": "aigit",
+  "version": "0.1.0",
+  "description": "AI-powered Git assistant CLI tool",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "aigit": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/entrypoints/cli.ts",
+    "build": "tsup",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "keywords": [
+    "git",
+    "ai",
+    "cli",
+    "assistant"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "consola": "^3.2.3",
+    "execa": "^9.5.2",
+    "inquirer": "^11.1.0",
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-commonjs": "^28.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "rollup": "^4.29.1",
+    "tslib": "^2.8.1",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "inquirer": {
+      "lodash": "4.17.21"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
