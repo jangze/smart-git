@@ -1,4 +1,4 @@
-# aigit
+# @zdc/smartgit
 
 AI-powered Git assistant CLI tool.
 
@@ -11,14 +11,14 @@ AI-powered Git assistant CLI tool.
 ## Installation
 
 ```bash
-npm install -g aigit
+npm install -g @zdc/smartgit
 ```
 
 ## Quick Start
 
 ```bash
 # Configure your API key
-aigit config
+smartgit config
 
 # Commit changes with AI-generated message
 aigit commit
@@ -31,8 +31,8 @@ aigit push
 
 | Command | Description |
 |---------|-------------|
-| `aigit commit` | Analyze changes and create commit with AI-generated message |
-| `aigit push` | Full workflow: sync, commit, and push changes |
+| `smartgit commit` | Analyze changes and create commit with AI-generated message |
+| `smartgit push` | Full workflow: sync, commit, and push changes |
 
 ## Global Options
 
@@ -142,7 +142,7 @@ After a successful `aigit push`, the tool will automatically generate and displa
 ### Example Output
 
 ```bash
-$ aigit push
+$ smartgit push
 
 ✓ Commit created
 ✓ Changes pushed to remote
@@ -180,14 +180,14 @@ To specify a platform manually:
 
 ## Workflow
 
-### `aigit commit`
+### `smartgit commit`
 
 1. Stage all changes (`git add .`)
 2. Generate commit message using AI
 3. Allow user to edit message
 4. Create commit
 
-### `aigit push`
+### `smartgit push`
 
 1. Stage all changes (`git add .`)
 2. Check remote branch status → gate confirmation

@@ -10,13 +10,7 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   minify: false,
-  target: 'node20',
+  target: 'node18',
   outDir: 'dist',
-  loader: {
-    '.ts': 'ts',
-  },
   platform: 'node',
-  esbuildOptions: (options) => {
-    options.resolveExtensions = ['.ts', '.js'];
-  },
 });
