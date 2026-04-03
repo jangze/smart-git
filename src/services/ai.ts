@@ -2,6 +2,7 @@ import { OpenAI } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { consola } from 'consola';
 import chalk from 'chalk';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import type { AigitConfig, CommitConfig, FilterConfig } from './config.js';
 
 export interface ChatMessage {
@@ -24,26 +25,43 @@ export class AIService {
     this.provider = config.ai.provider;
     this.model = config.ai.model;
 
+    // Get proxy from env or config
+    const proxyUrl = config.ai.httpProxy
+      || process.env.HTTPS_PROXY
+      || process.env.https_proxy
+      || process.env.HTTP_PROXY
+      || process.env.http_proxy;
+
+    const fetchOptions = proxyUrl ? { dispatcher: new HttpsProxyAgent(proxyUrl) } : undefined;
+
     if (config.ai.provider === 'anthropic') {
       this.client = new Anthropic({
         apiKey: config.ai.apiKey || process.env.ANTHROPIC_API_KEY || '',
         baseURL: config.ai.baseURL,
+        ...(fetchOptions as any),
       });
       consola.info(chalk.gray(`AI Provider: Anthropic`));
       consola.info(chalk.gray(`Model: ${this.model}`));
       if (config.ai.baseURL) {
         consola.info(chalk.gray(`Base URL: ${config.ai.baseURL}`));
       }
+      if (proxyUrl) {
+        consola.info(chalk.gray(`Proxy: ${proxyUrl}`));
+      }
     } else {
       // OpenAI or Ollama
       this.client = new OpenAI({
         apiKey: config.ai.apiKey || process.env.OPENAI_API_KEY || '',
         baseURL: config.ai.baseURL,
+        ...(fetchOptions as any),
       });
       consola.info(chalk.gray(`AI Provider: ${config.ai.provider}`));
       consola.info(chalk.gray(`Model: ${this.model}`));
       if (config.ai.baseURL) {
         consola.info(chalk.gray(`Base URL: ${config.ai.baseURL}`));
+      }
+      if (proxyUrl) {
+        consola.info(chalk.gray(`Proxy: ${proxyUrl}`));
       }
     }
   }

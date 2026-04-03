@@ -4,9 +4,16 @@ node_modules/
 # Build output
 dist/
 
+# Package tarballs (local builds)
+*.tgz
+
+# Lock files
+package-lock.json
+
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # IDE
 .vscode/
@@ -19,3 +26,6 @@ npm-debug.log*
 # Env files (keep template)
 .env
 !.env.example
+
+# npm publish temp files
+.npmignore

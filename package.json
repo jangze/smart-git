@@ -1,12 +1,12 @@
 {
   "name": "zdc-smartgit-cli",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "AI-powered Git assistant CLI tool",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {
-    "smartgit": "./dist/cli.js",
-    "aigit": "./dist/cli.js"
+    "smartgit": "dist/cli.js",
+    "aigit": "dist/cli.js"
   },
   "scripts": {
     "dev": "tsx src/entrypoints/cli.ts",
@@ -26,7 +26,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jangze/smart-git.git"
+    "url": "git+https://github.com/jangze/smart-git.git"
   },
   "homepage": "https://github.com/jangze/smart-git#readme",
   "bugs": {
@@ -46,6 +46,7 @@
     "commander": "^12.1.0",
     "consola": "^3.2.3",
     "execa": "^9.5.2",
+    "https-proxy-agent": "^9.0.0",
     "inquirer": "^11.1.0",
     "openai": "^4.77.0"
   },
