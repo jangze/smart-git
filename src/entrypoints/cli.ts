@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import inquirer from 'inquirer';
 import { commitCommand } from '../commands/commit.js';
 import { pushCommand } from '../commands/push.js';
 import { configCommand } from '../commands/config.js';
@@ -36,6 +37,28 @@ configCommand(program);
 commitCommand(program);
 pushCommand(program);
 
+// 如果没有提供任何参数和子命令，显示交互式菜单
+program.action(async () => {
+  const { action } = await inquirer.prompt<{
+    action: 'commit' | 'push' | 'config';
+  }>([
+    {
+      type: 'list',
+      name: 'action',
+      message: 'Select an action:',
+      choices: [
+        { name: '📝 Commit - Generate AI commit message', value: 'commit' },
+        { name: '🚀 Push - Full sync, commit and push workflow', value: 'push' },
+        { name: '⚙️  Config - Configure API key and settings', value: 'config' },
+      ],
+    },
+  ]);
+
+  // 执行选中的命令
+  const args = process.argv.slice(2);
+  program.parse(['node', 'aigit', action, ...args]);
+});
+
 // Global error handler
 process.on('uncaughtException', (error) => {
   consola.error(chalk.red('Unhandled error:'), error.message);
@@ -45,6 +68,11 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   consola.error(chalk.red('Unhandled rejection:'), reason);
   process.exit(1);
+});
+
+// 检查是否提供了子命令参数
+const hasSubCommand = process.argv.some(arg => {
+  return ['commit', 'push', 'config', 'help', '-h', '--help', '-V', '--version'].includes(arg);
 });
 
 // Parse and execute

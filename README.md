@@ -6,7 +6,7 @@ AI-powered Git assistant CLI tool.
 
 - AI-generated commit messages
 - Automated sync workflow with gate confirmations
-- Multi-model support (OpenAI compatible APIs)
+- Multi-provider support (OpenAI, Anthropic, Ollama)
 
 ## Installation
 
@@ -17,6 +17,9 @@ npm install -g @zdc/smartgit
 ## Quick Start
 
 ```bash
+# Interactive menu (no arguments)
+smartgit
+
 # Configure your API key
 smartgit config
 
@@ -31,6 +34,7 @@ aigit push
 
 | Command | Description |
 |---------|-------------|
+| `smartgit` | Interactive menu - Select action from list |
 | `smartgit commit` | Analyze changes and create commit with AI-generated message |
 | `smartgit push` | Full workflow: sync, commit, and push changes |
 
@@ -81,9 +85,10 @@ Configuration file location: `~/.aigit/config.json`
 
 | Field | Description |
 |-------|-------------|
-| `ai.apiKey` | Your OpenAI API key (or compatible API) |
-| `ai.baseURL` | API base URL (default: OpenAI) |
-| `ai.model` | Model name (default: gpt-4o-mini) |
+| `ai.provider` | AI provider: `openai`, `anthropic`, or `ollama` |
+| `ai.apiKey` | Your API key (sk-xxx for OpenAI, sk-ant-xxx for Anthropic) |
+| `ai.baseURL` | API base URL (default depends on provider) |
+| `ai.model` | Model name (default: claude-sonnet-4-20250514 for Anthropic, gpt-4o-mini for OpenAI) |
 | `git.defaultBranch` | Your default branch name (default: main) |
 | `commit.language` | Commit message language: `zh` (Chinese) or `en` (English) |
 | `mr.enabled` | Enable MR/PR link generation after push (default: true) |

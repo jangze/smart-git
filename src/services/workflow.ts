@@ -13,7 +13,6 @@ export interface WorkflowOptions {
   dryRun?: boolean;
   message?: string;
   noEdit?: boolean;
-  doPush: boolean;
 }
 
 /**
@@ -181,31 +180,17 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
     process.exit(1);
   }
 
-  // Step 5: Execute commit (and push)
+  // Step 5: Execute commit
   consola.info(chalk.blue('Step 5: Creating commit'));
 
   if (options.dryRun) {
     consola.info(chalk.cyan('[Dry Run] Would create commit with message:'));
     consola.log(chalk.cyan(commitMessage));
-    if (options.doPush) {
-      consola.info(chalk.cyan('[Dry Run] Would push to remote'));
-    }
     return;
   }
 
   await git.commit(commitMessage);
   consola.success(chalk.green('Commit created'));
-
-  if (options.doPush) {
-    consola.info(chalk.blue('Pushing to remote'));
-    const shouldSetUpstream = !remoteBranchInfo.exists;
-
-    await git.push(shouldSetUpstream);
-    consola.success(chalk.green('Changes pushed to remote'));
-
-    // Generate and display MR/PR link
-    await displayMrLink(config);
-  }
 }
 
 /**

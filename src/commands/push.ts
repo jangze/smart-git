@@ -18,7 +18,6 @@ export function pushCommand(program: Command) {
         await execPush({
           ...cliOptions,
           ...options,
-          doPush: true,
         });
         consola.success(chalk.green('Changes pushed successfully!'));
       } catch (error) {
