@@ -18,28 +18,48 @@ export function configCommand(program: Command) {
         apiKey: string;
         baseURL: string;
         model: string;
+        provider: 'openai' | 'anthropic' | 'ollama';
         defaultBranch: string;
         language: 'zh' | 'en';
         mrEnabled: boolean;
         mrPlatform: 'auto' | 'github' | 'gitlab';
       }>([
         {
+          type: 'list',
+          name: 'provider',
+          message: 'AI Provider:',
+          choices: [
+            { name: 'Anthropic (Claude)', value: 'anthropic' },
+            { name: 'OpenAI', value: 'openai' },
+            { name: 'Ollama (Local)', value: 'ollama' },
+          ],
+          default: currentConfig.ai.provider || 'openai',
+        },
+        {
           type: 'input',
           name: 'apiKey',
-          message: 'Enter your OpenAI API Key:',
+          message: 'Enter your API Key:',
           default: currentConfig.ai.apiKey || '',
         },
         {
           type: 'input',
           name: 'baseURL',
-          message: 'API Base URL (leave empty for OpenAI default):',
-          default: currentConfig.ai.baseURL || 'https://api.openai.com/v1',
+          message: 'API Base URL (leave empty for default):',
+          default: (answers: { provider: string }) => {
+            if (answers.provider === 'anthropic') return 'https://api.anthropic.com';
+            if (answers.provider === 'openai') return 'https://api.openai.com/v1';
+            return 'http://localhost:11434/v1';
+          },
         },
         {
           type: 'input',
           name: 'model',
           message: 'Model name:',
-          default: currentConfig.ai.model || 'gpt-4o-mini',
+          default: (answers: { provider: string }) => {
+            if (answers.provider === 'anthropic') return 'claude-sonnet-4-20250514';
+            if (answers.provider === 'openai') return 'gpt-4o-mini';
+            return 'llama-3.2';
+          },
         },
         {
           type: 'input',
@@ -79,7 +99,7 @@ export function configCommand(program: Command) {
 
       saveConfig({
         ai: {
-          provider: 'openai',
+          provider: answers.provider,
           apiKey: answers.apiKey || undefined,
           baseURL: answers.baseURL || undefined,
           model: answers.model,

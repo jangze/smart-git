@@ -1,0 +1,34 @@
+# Source files
+src/
+*.ts
+*.tsx
+*.js
+
+# Config files
+tsconfig.json
+tsup.config.js
+rollup.config.js
+eslint.config.js
+
+# Development
+node_modules/
+*.log
+*.lock
+
+# Docs
+项目方案.md
+
+# Git
+.git/
+.gitignore
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+__tests__/
+test/
+tests/
+
+# Misc
+.DS_Store
+Thumbs.db

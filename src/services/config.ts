@@ -5,10 +5,11 @@ import { consola } from 'consola';
 import chalk from 'chalk';
 
 export interface AIConfig {
-  provider: 'openai' | 'ollama';
+  provider: 'openai' | 'ollama' | 'anthropic';
   apiKey?: string;
   baseURL?: string;
   model: string;
+  httpProxy?: string;
 }
 
 export interface GitConfig {
@@ -88,6 +89,20 @@ export function loadConfig(): AigitConfig {
   try {
     const content = readFileSync(CONFIG_FILE, 'utf-8');
     const config = JSON.parse(content);
+
+    // 向后兼容：如果配置文件没有 provider 字段，根据 baseURL 推断
+    if (!config.ai?.provider) {
+      if (config.ai?.baseURL?.includes('anthropic.com')) {
+        config.ai.provider = 'anthropic';
+      } else if (config.ai?.baseURL?.includes('ollama')) {
+        config.ai.provider = 'ollama';
+      } else {
+        // 默认视为 OpenAI 兼容 API（包括老配置文件和其他兼容服务）
+        config.ai.provider = 'openai';
+      }
+      consola.info(chalk.yellow('Legacy config detected. Auto-detected provider:'), config.ai.provider);
+    }
+
     return { ...DEFAULT_CONFIG, ...config };
   } catch (error) {
     consola.warn(chalk.yellow('Failed to parse config file, using defaults'));
