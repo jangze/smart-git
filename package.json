@@ -1,6 +1,6 @@
 {
   "name": "zdc-smartgit-cli",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AI-powered Git assistant CLI tool",
   "type": "module",
   "main": "dist/cli.js",
