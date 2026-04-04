@@ -5,7 +5,7 @@ node_modules/
 dist/
 
 # Package tarballs (local builds)
-*.tgz
+# *.tgz
 
 # Lock files
 package-lock.json

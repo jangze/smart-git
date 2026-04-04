@@ -6,6 +6,7 @@ import * as git from '../services/git.js';
 import { confirm, confirmOrEdit } from '../utils/interactive.js';
 import { getRemoteInfo, getCurrentBranch } from '../utils/platform.js';
 import { generateMrLink } from '../utils/mrLink.js';
+import { t } from '../utils/i18n.js';
 
 export interface WorkflowOptions {
   yes?: boolean;
@@ -23,18 +24,18 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
   const config = loadConfig();
 
   // Step 1: Stage all changes
-  consola.info(chalk.blue('Step 1: Staging changes'));
+  consola.info(chalk.blue(t('workflow.step1')));
   await git.stageAll();
 
   // Check if there are any changes
   const hasChanges = await git.hasStagedChanges();
   if (!hasChanges) {
-    consola.info(chalk.yellow('No changes to commit'));
+    consola.info(chalk.yellow(t('commit.noChanges')));
     return;
   }
 
   // Step 2: Generate and confirm commit message
-  consola.info(chalk.blue('Step 2: Generating commit message'));
+  consola.info(chalk.blue(t('workflow.step2')));
 
   let commitMessage = options.message;
 
@@ -55,34 +56,34 @@ export async function execCommitWorkflow(options: WorkflowOptions): Promise<void
   }
 
   // Show generated message
-  consola.info(chalk.white('Generated commit message:'));
+  consola.info(chalk.white(t('commit.generatedMessage')));
   consola.log(chalk.cyan(commitMessage));
 
   // Allow editing unless --no-edit or dry-run
   // Default is Y (use generated), N leads to editor
   if (!options.noEdit && !options.dryRun) {
-    const result = await confirmOrEdit('Use this commit message?');
+    const result = await confirmOrEdit(t('commit.useThisMessage'));
     if (!result.useGenerated && result.editedMessage) {
       commitMessage = result.editedMessage;
     }
   }
 
   if (!commitMessage.trim()) {
-    consola.error(chalk.red('Commit message is empty'));
+    consola.error(chalk.red(t('commit.emptyMessage')));
     process.exit(1);
   }
 
   // Step 3: Execute commit
-  consola.info(chalk.blue('Step 3: Creating commit'));
+  consola.info(chalk.blue(t('workflow.step3')));
 
   if (options.dryRun) {
-    consola.info(chalk.cyan('[Dry Run] Would create commit with message:'));
+    consola.info(chalk.cyan(t('commit.dryRun')));
     consola.log(chalk.cyan(commitMessage));
     return;
   }
 
   await git.commit(commitMessage);
-  consola.success(chalk.green('Commit created'));
+  consola.success(chalk.green(t('commit.created')));
 }
 
 /**
@@ -98,7 +99,7 @@ export async function execPush(options: WorkflowOptions): Promise<void> {
   const currentBranch = await git.getCurrentBranch();
 
   // Step 1: Check remote branch
-  consola.info(chalk.blue(`Step 1: Checking remote branch "${currentBranch}"`));
+  consola.info(chalk.blue(t('workflow.checkingRemote', { branch: currentBranch })));
 
   await git.fetchRemote();
 
@@ -106,93 +107,93 @@ export async function execPush(options: WorkflowOptions): Promise<void> {
 
   if (remoteBranchInfo.exists && remoteBranchInfo.behind > 0) {
     consola.warn(
-      chalk.yellow(`Remote branch has ${remoteBranchInfo.behind} new commit(s), local is behind`)
+      chalk.yellow(t('workflow.remoteBehind', { count: remoteBranchInfo.behind }))
     );
 
     if (!options.yes) {
       const shouldPull = await confirm(
-        chalk.yellow(`Download remote updates to local branch? (y/n)`)
+        chalk.yellow(t('workflow.pullRemote'))
       );
       if (shouldPull) {
         await git.pullRemote(currentBranch);
-        consola.success(chalk.green('Remote updates merged locally'));
+        consola.success(chalk.green(t('workflow.remoteMerged')));
       }
     } else {
       await git.pullRemote(currentBranch);
-      consola.success(chalk.green('Remote updates merged locally'));
+      consola.success(chalk.green(t('workflow.remoteMerged')));
     }
   } else if (remoteBranchInfo.exists) {
-    consola.success(chalk.green('Current branch is up to date with remote'));
+    consola.success(chalk.green(t('workflow.remoteUpToDate')));
   } else {
-    consola.info(chalk.gray('Remote branch does not exist yet'));
+    consola.info(chalk.gray(t('workflow.remoteNotExists')));
   }
 
   // Step 2: Check default branch sync status
   const defaultBranch = config.git.defaultBranch;
-  consola.info(chalk.blue(`Step 2: Checking ${defaultBranch} sync status`));
+  consola.info(chalk.blue(t('workflow.checkingMaster', { branch: defaultBranch })));
 
   const masterSync = await git.checkMasterSync(defaultBranch);
 
   if (masterSync.remoteExists && masterSync.localBehind > 0) {
     consola.warn(
-      chalk.yellow(`Local ${defaultBranch} is behind remote by ${masterSync.localBehind} commit(s)`)
+      chalk.yellow(t('workflow.masterBehind', { branch: defaultBranch, count: masterSync.localBehind }))
     );
 
     if (!options.yes) {
       const shouldPull = await confirm(
-        chalk.yellow(`Pull remote ${defaultBranch}? (y/n)`)
+        chalk.yellow(t('workflow.pullMaster', { branch: defaultBranch }))
       );
       if (shouldPull) {
         await git.pullRemote(defaultBranch);
-        consola.success(chalk.green(`${defaultBranch} updated`));
+        consola.success(chalk.green(t('workflow.masterUpdated', { branch: defaultBranch })));
       }
     } else {
       await git.pullRemote(defaultBranch);
-      consola.success(chalk.green(`${defaultBranch} updated`));
+      consola.success(chalk.green(t('workflow.masterUpdated', { branch: defaultBranch })));
     }
   } else {
-    consola.success(chalk.green(`${defaultBranch} is up to date`));
+    consola.success(chalk.green(t('workflow.masterUpToDate', { branch: defaultBranch })));
   }
 
   // Step 3: Check if current branch includes latest default branch
-  consola.info(chalk.blue(`Step 3: Checking if current branch includes latest ${defaultBranch}`));
+  consola.info(chalk.blue(t('workflow.checkingBranchIncludesMaster', { branch: defaultBranch })));
 
   const branchIncludesMaster = await git.checkBranchIncludesMaster(currentBranch, defaultBranch);
 
   if (branchIncludesMaster.needsMerge) {
     consola.warn(
       chalk.yellow(
-        `Current branch is ${branchIncludesMaster.commitsBehind} commit(s) behind ${defaultBranch}`
+        t('workflow.branchBehind', { branch: defaultBranch, count: branchIncludesMaster.commitsBehind })
       )
     );
 
     if (!options.yes) {
       const shouldMerge = await confirm(
-        chalk.yellow(`Merge ${defaultBranch} into current branch? (y/n)`)
+        chalk.yellow(t('workflow.mergeMaster', { branch: defaultBranch }))
       );
       if (shouldMerge) {
         await git.mergeBranch(defaultBranch);
-        consola.success(chalk.green(`Merged ${defaultBranch} into current branch`));
+        consola.success(chalk.green(t('workflow.masterMerged', { branch: defaultBranch })));
       }
     } else {
       await git.mergeBranch(defaultBranch);
-      consola.success(chalk.green(`Merged ${defaultBranch} into current branch`));
+      consola.success(chalk.green(t('workflow.masterMerged', { branch: defaultBranch })));
     }
   } else {
-    consola.success(chalk.green('Current branch includes latest master'));
+    consola.success(chalk.green(t('workflow.branchIncludesLatest')));
   }
 
   // Step 4: Push to remote
-  consola.info(chalk.blue('Step 4: Pushing to remote'));
+  consola.info(chalk.blue(t('workflow.step4')));
 
   if (options.dryRun) {
-    consola.info(chalk.cyan('[Dry Run] Would push to remote'));
+    consola.info(chalk.cyan(t('workflow.push.dryRun')));
     return;
   }
 
   const shouldSetUpstream = !remoteBranchInfo.exists;
   await git.push(shouldSetUpstream);
-  consola.success(chalk.green('Changes pushed to remote'));
+  consola.success(chalk.green(t('workflow.pushed')));
 
   // Step 5: Display MR/PR link
   await displayMrLink(config);
@@ -238,7 +239,7 @@ async function displayMrLink(config: AigitConfig): Promise<void> {
 
   consola.log('');
   consola.log(chalk.green(`┌${horizontalLine}┐`));
-  consola.log(chalk.green(`│`) + chalk.white('  Create Merge Request'.padEnd(boxWidth - 1) + '│'));
+  consola.log(chalk.green(`│`) + chalk.white('  ' + t('mr.create').padEnd(boxWidth - 1) + '│'));
   consola.log(chalk.green(`│`) + chalk.white(''.padEnd(boxWidth - 1) + '│'));
 
   // Wrap long URLs

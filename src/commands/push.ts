@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { consola } from 'consola';
 import chalk from 'chalk';
 import { execPush } from '../services/workflow.js';
+import { t } from '../utils/i18n.js';
 
 export function pushCommand(program: Command) {
   program
@@ -12,16 +13,16 @@ export function pushCommand(program: Command) {
     .action(async (options) => {
       const cliOptions = program.opts();
 
-      consola.start(chalk.blue('Starting push workflow...'));
+      consola.start(chalk.blue(t('push.start')));
 
       try {
         await execPush({
           ...cliOptions,
           ...options,
         });
-        consola.success(chalk.green('Changes pushed successfully!'));
+        consola.success(chalk.green(t('push.success')));
       } catch (error) {
-        consola.error(chalk.red('Push failed:'), error instanceof Error ? error.message : error);
+        consola.error(chalk.red(t('push.failed')), error instanceof Error ? error.message : error);
         process.exit(1);
       }
     });

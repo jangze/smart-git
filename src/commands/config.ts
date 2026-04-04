@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import { consola } from 'consola';
 import chalk from 'chalk';
 import { saveConfig, loadConfig } from '../services/config.js';
+import { t } from '../utils/i18n.js';
 
 export function configCommand(program: Command) {
   program
@@ -11,8 +12,8 @@ export function configCommand(program: Command) {
     .action(async () => {
       const currentConfig = loadConfig();
 
-      consola.info(chalk.blue('Configure aigit settings'));
-      consola.info(chalk.gray(`Config file: ~/.aigit/config.json`));
+      consola.info(chalk.blue(t('config.title')));
+      consola.info(chalk.gray(t('config.file')));
 
       const answers = await inquirer.prompt<{
         apiKey: string;
@@ -27,7 +28,7 @@ export function configCommand(program: Command) {
         {
           type: 'list',
           name: 'provider',
-          message: 'AI Provider:',
+          message: t('config.provider'),
           choices: [
             { name: 'Anthropic (Claude)', value: 'anthropic' },
             { name: 'OpenAI', value: 'openai' },
@@ -38,13 +39,13 @@ export function configCommand(program: Command) {
         {
           type: 'input',
           name: 'apiKey',
-          message: 'Enter your API Key:',
+          message: t('config.apiKey'),
           default: currentConfig.ai.apiKey || '',
         },
         {
           type: 'input',
           name: 'baseURL',
-          message: 'API Base URL (leave empty for default):',
+          message: t('config.baseURL'),
           default: (answers: { provider: string }) => {
             if (answers.provider === 'anthropic') return 'https://api.anthropic.com';
             if (answers.provider === 'openai') return 'https://api.openai.com/v1';
@@ -54,7 +55,7 @@ export function configCommand(program: Command) {
         {
           type: 'input',
           name: 'model',
-          message: 'Model name:',
+          message: t('config.model'),
           default: (answers: { provider: string }) => {
             if (answers.provider === 'anthropic') return 'claude-sonnet-4-20250514';
             if (answers.provider === 'openai') return 'gpt-4o-mini';
@@ -64,13 +65,13 @@ export function configCommand(program: Command) {
         {
           type: 'input',
           name: 'defaultBranch',
-          message: 'Default branch name:',
+          message: t('config.defaultBranch'),
           default: currentConfig.git.defaultBranch || 'main',
         },
         {
           type: 'list',
           name: 'language',
-          message: 'Commit message language:',
+          message: t('config.language'),
           choices: [
             { name: '中文', value: 'zh' },
             { name: 'English', value: 'en' },
@@ -80,13 +81,13 @@ export function configCommand(program: Command) {
         {
           type: 'confirm',
           name: 'mrEnabled',
-          message: 'Enable Merge Request link generation after push?',
+          message: t('config.mrEnabled'),
           default: currentConfig.mr.enabled,
         },
         {
           type: 'list',
           name: 'mrPlatform',
-          message: 'Git platform:',
+          message: t('config.mrPlatform'),
           choices: [
             { name: 'Auto-detect', value: 'auto' },
             { name: 'GitHub', value: 'github' },
@@ -116,6 +117,6 @@ export function configCommand(program: Command) {
         },
       });
 
-      consola.success(chalk.green('Configuration saved!'));
+      consola.success(chalk.green(t('config.saved')));
     });
 }

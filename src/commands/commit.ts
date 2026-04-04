@@ -3,6 +3,7 @@ import { consola } from 'consola';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { execCommitWorkflow, execPush } from '../services/workflow.js';
+import { t } from '../utils/i18n.js';
 
 export function commitCommand(program: Command) {
   program
@@ -13,35 +14,35 @@ export function commitCommand(program: Command) {
     .action(async (options) => {
       const cliOptions = program.opts();
 
-      consola.start(chalk.blue('Starting commit workflow...'));
+      consola.start(chalk.blue(t('commit.start')));
 
       try {
         await execCommitWorkflow({
           ...cliOptions,
           ...options,
         });
-        consola.success(chalk.green('Commit created successfully!'));
+        consola.success(chalk.green(t('commit.success')));
 
         // 询问是否继续 push
         if (!options.dryRun) {
           const { continuePush } = await inquirer.prompt({
             type: 'confirm',
             name: 'continuePush',
-            message: 'Continue to push changes to remote?',
+            message: t('commit.continuePush'),
             default: true,
           });
 
           if (continuePush) {
-            consola.start(chalk.blue('Starting push workflow...'));
+            consola.start(chalk.blue(t('commit.push.start')));
             await execPush({
               ...cliOptions,
               ...options,
             });
-            consola.success(chalk.green('Changes pushed successfully!'));
+            consola.success(chalk.green(t('commit.push.success')));
           }
         }
       } catch (error) {
-        consola.error(chalk.red('Commit failed:'), error instanceof Error ? error.message : error);
+        consola.error(chalk.red(t('commit.failed')), error instanceof Error ? error.message : error);
         process.exit(1);
       }
     });

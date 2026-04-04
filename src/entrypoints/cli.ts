@@ -9,6 +9,7 @@ import inquirer from 'inquirer';
 import { commitCommand } from '../commands/commit.js';
 import { pushCommand } from '../commands/push.js';
 import { configCommand } from '../commands/config.js';
+import { t } from '../utils/i18n.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,7 +38,7 @@ configCommand(program);
 commitCommand(program);
 pushCommand(program);
 
-// 如果没有提供任何参数和子命令，显示交互式菜单
+// 如果没有提供任何子命令和参数，显示交互式菜单
 program.action(async () => {
   const { action } = await inquirer.prompt<{
     action: 'commit' | 'push' | 'config';
@@ -45,11 +46,11 @@ program.action(async () => {
     {
       type: 'list',
       name: 'action',
-      message: 'Select an action:',
+      message: t('menu.select'),
       choices: [
-        { name: '📝 Commit - Generate AI commit message', value: 'commit' },
-        { name: '🚀 Push - Full sync, commit and push workflow', value: 'push' },
-        { name: '⚙️  Config - Configure API key and settings', value: 'config' },
+        { name: t('menu.commit'), value: 'commit' },
+        { name: t('menu.push'), value: 'push' },
+        { name: t('menu.config'), value: 'config' },
       ],
     },
   ]);
